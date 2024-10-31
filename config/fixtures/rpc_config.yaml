@@ -1,0 +1,16 @@
+rpc_fetch:
+  - method: GET
+    url: http://localhost:26657/status
+    body: ""
+    fields:
+      - selector: ".result.sync_info.latest_block_height"
+        metric_name: "block_height"
+      - selector: ".result.node_info.network"
+        metric_name: "archway-1"
+        
+  - method: POST
+    url: http://localhost:8545
+    body: '{"jsonrpc":"2.0","id":83,"result":false}'
+    fields:
+      - selector: ".result"
+        metric_name: "is_syncing"
