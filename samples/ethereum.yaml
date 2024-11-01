@@ -1,0 +1,14 @@
+rpc_fetch:
+  - method: POST
+    url: https://rpc.flashbots.net
+    body: '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":83}'
+    fields:
+      - selector: ".result"
+        metric_name: "is_syncing"
+
+  - method: POST
+    url: https://rpc.flashbots.net
+    body: '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":83}'
+    fields:
+      - selector: ".result"
+        metric_name: "block_number"

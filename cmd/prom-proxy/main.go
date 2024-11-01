@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 
 	"github.com/dsrvlabs/prometheus-proxy/config"
+	"github.com/dsrvlabs/prometheus-proxy/converter"
+	"github.com/dsrvlabs/prometheus-proxy/jsonselector"
 	"github.com/dsrvlabs/prometheus-proxy/types"
 )
 
@@ -20,22 +23,28 @@ const (
 
 // App represents the application.
 type App struct {
-	config *types.Config
+	config    *types.Config
+	converter converter.Converter
+	gauges    map[string]prometheus.Gauge
 }
 
 // Prepare prepares prometheus metrics.
 func (a *App) Prepare() (*http.ServeMux, error) {
+	a.gauges = make(map[string]prometheus.Gauge)
+
 	rpcs := a.config.RPCFetch
 	for _, rpc := range rpcs {
 		fields := rpc.Fields
 		for _, field := range fields {
-			prometheus.MustRegister(
-				prometheus.NewGauge(
-					prometheus.GaugeOpts{
-						Name: field.MetricName,
-					},
-				),
+			gauge := prometheus.NewGauge(
+				prometheus.GaugeOpts{
+					Name: field.MetricName,
+				},
 			)
+
+			a.gauges[field.MetricName] = gauge
+
+			prometheus.MustRegister(gauge)
 		}
 	}
 
@@ -47,7 +56,32 @@ func (a *App) Prepare() (*http.ServeMux, error) {
 
 // Run runs the application.
 func (a *App) Run(router *http.ServeMux) error {
+	go func() {
+		for {
+			a.updateMetrics()
+			time.Sleep(5 * time.Second)
+		}
+	}()
+
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", defaultHTTPPort), router)
+}
+
+func (a *App) updateMetrics() {
+	for _, rpc := range a.config.RPCFetch {
+		results, err := a.converter.Fetch(rpc)
+		if err != nil {
+			continue
+		}
+
+		for _, result := range results {
+			gauge, ok := a.gauges[result.MetricName]
+			if !ok {
+				continue
+			}
+
+			gauge.Set(result.Value)
+		}
+	}
 }
 
 func main() {
@@ -93,8 +127,11 @@ func main() {
 
 // NewApp creates a new App instance.
 func NewApp(config *types.Config) *App {
+	selector := jsonselector.NewSelector()
+	converter := converter.NewConverter(selector)
 	// TODO: Read config
 	return &App{
-		config: config,
+		config:    config,
+		converter: converter,
 	}
 }
