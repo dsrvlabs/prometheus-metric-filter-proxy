@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dsrvlabs/prometheus-proxy/jsonselector"
 	"github.com/dsrvlabs/prometheus-proxy/types"
@@ -15,7 +18,7 @@ import (
 type ResultConvert struct {
 	Selector   string
 	MetricName string
-	Value      string
+	Value      float64
 	Err        error
 }
 
@@ -39,7 +42,7 @@ func (c *converter) Fetch(config types.RPCFetchConfig) ([]ResultConvert, error) 
 		return nil, err
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: time.Second * 2}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -63,16 +66,55 @@ func (c *converter) Fetch(config types.RPCFetchConfig) ([]ResultConvert, error) 
 	ret := make([]ResultConvert, len(config.Fields))
 	for i, field := range config.Fields {
 		value, err := c.selector.Find(mapData, field.Selector)
+		convertedValue, err := convertToFloat(value)
 
 		ret[i] = ResultConvert{
 			Selector:   field.Selector,
 			MetricName: field.MetricName,
-			Value:      value,
+			Value:      convertedValue,
 			Err:        err,
 		}
 	}
 
 	return ret, nil
+}
+
+func convertToFloat(value interface{}) (float64, error) {
+	outValue := 0.0
+
+	switch reflect.TypeOf(value).Kind() {
+	case reflect.String:
+		strValue := value.(string)
+		if strings.HasPrefix(strValue, "0x") {
+			outInt, err := strconv.ParseInt(strings.TrimLeft(strValue, "0x"), 16, 64)
+			if err != nil {
+				return 0.0, err
+			}
+			return float64(outInt), nil
+		}
+
+		outValue, err := strconv.ParseInt(strValue, 10, 64)
+		if err == nil {
+			return float64(outValue), nil
+		}
+
+		outValue, err = strconv.ParseInt(strValue, 16, 64)
+		if err != nil {
+			return 0.0, err
+		}
+
+		return float64(outValue), nil
+	case reflect.Int:
+		return float64(value.(int)), nil
+	case reflect.Bool:
+		if value.(bool) {
+			outValue = 1.0
+		}
+	default:
+		outValue = 0.0
+	}
+
+	return outValue, nil
 }
 
 // NewConverter creates a new Converter.

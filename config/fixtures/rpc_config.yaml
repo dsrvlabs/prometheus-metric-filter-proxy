@@ -5,8 +5,8 @@ rpc_fetch:
     fields:
       - selector: ".result.sync_info.latest_block_height"
         metric_name: "block_height"
-      - selector: ".result.node_info.network"
-        metric_name: "archway-1"
+      - selector: ".result.sync_info.catch_up"
+        metric_name: "catch_up"
         
   - method: POST
     url: http://localhost:8545

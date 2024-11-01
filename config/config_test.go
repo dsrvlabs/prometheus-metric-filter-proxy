@@ -30,8 +30,8 @@ func TestConfig_Load(t *testing.T) {
 								MetricName: "block_height",
 							},
 							{
-								Selector:   ".result.node_info.network",
-								MetricName: "archway-1",
+								Selector:   ".result.sync_info.catch_up",
+								MetricName: "catch_up",
 							},
 						},
 					},

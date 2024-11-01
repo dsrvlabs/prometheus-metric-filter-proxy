@@ -69,8 +69,8 @@ func Test_Converter(t *testing.T) {
 		Body:   "",
 		Fields: []types.Field{
 			{
-				Selector:   ".result.node_info.network",
-				MetricName: "network",
+				Selector:   ".result.validator_info.voting_power",
+				MetricName: "voting_power",
 			},
 			{
 				Selector:   ".result.sync_info.latest_block_height",
@@ -88,6 +88,43 @@ func Test_Converter(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, len(rpcFetchConfig.Fields), len(ret))
-	assert.Equal(t, "archway-1", ret[0].Value)
-	assert.Equal(t, "7090750", ret[1].Value)
+	assert.Equal(t, float64(27293355), ret[0].Value)
+	assert.Equal(t, float64(7090750), ret[1].Value)
+}
+
+func Test_ConvertToFloat(t *testing.T) {
+	tests := []struct {
+		Input  interface{}
+		Output float64
+		Error  error
+	}{
+		{
+			Input:  "0x1234",
+			Output: 4660,
+			Error:  nil,
+		},
+		{
+			Input:  "1234",
+			Output: 1234,
+			Error:  nil,
+		},
+		{
+			Input:  true,
+			Output: 1.0,
+			Error:  nil,
+		},
+		{
+			Input:  "false",
+			Output: 0.0,
+			Error:  nil,
+		},
+
+		// TODO: Add error cases
+	}
+
+	for _, value := range tests {
+		out, err := convertToFloat(value.Input)
+		assert.Nil(t, value.Error, err)
+		assert.Equal(t, value.Output, out)
+	}
 }
