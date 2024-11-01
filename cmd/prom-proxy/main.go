@@ -14,6 +14,7 @@ import (
 	"github.com/dsrvlabs/prometheus-proxy/converter"
 	"github.com/dsrvlabs/prometheus-proxy/jsonselector"
 	"github.com/dsrvlabs/prometheus-proxy/types"
+	"github.com/dsrvlabs/prometheus-proxy/log"
 )
 
 const (
@@ -56,6 +57,8 @@ func (a *App) Prepare() (*http.ServeMux, error) {
 
 // Run runs the application.
 func (a *App) Run(router *http.ServeMux) error {
+	log.Info().Str("module", "prom-proxy").Msg("Starting server")
+
 	go func() {
 		for {
 			a.updateMetrics()
@@ -70,12 +73,14 @@ func (a *App) updateMetrics() {
 	for _, rpc := range a.config.RPCFetch {
 		results, err := a.converter.Fetch(rpc)
 		if err != nil {
+			log.Warn().Str("module", "prom-proxy").Err(err).Msgf("Failed to fetch metrics %s", rpc.URL)
 			continue
 		}
 
 		for _, result := range results {
 			gauge, ok := a.gauges[result.MetricName]
 			if !ok {
+				log.Warn().Str("module", "prom-proxy").Msgf("Failed to find gauge %s", result.MetricName)
 				continue
 			}
 
@@ -107,10 +112,15 @@ func main() {
 
 					configFile := cCtx.String("config")
 					config, err := config.Load(configFile)
+					if err != nil {
+						log.Fatal().Str("module", "prom-proxy").Err(err).Msgf("Failed to load config %s", configFile)
+						return err
+					}
 
 					app := NewApp(config)
 					router, err := app.Prepare()
 					if err != nil {
+						log.Error().Str("module", "prom-proxy").Err(err).Msg("Failed to prepare server")
 						return err
 					}
 
@@ -127,9 +137,9 @@ func main() {
 
 // NewApp creates a new App instance.
 func NewApp(config *types.Config) *App {
+	// TODO: Refactorigin
 	selector := jsonselector.NewSelector()
 	converter := converter.NewConverter(selector)
-	// TODO: Read config
 	return &App{
 		config:    config,
 		converter: converter,
