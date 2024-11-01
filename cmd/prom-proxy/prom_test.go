@@ -27,6 +27,12 @@ func Test_Prom(t *testing.T) {
 						MetricName: "voting_power",
 					},
 				},
+				Labels: []types.Label{
+					{
+						Key: "hostname",
+						Value: "cosmos-mainnet",
+					},
+				},
 			},
 		},
 	}
@@ -35,6 +41,11 @@ func Test_Prom(t *testing.T) {
 	router, err := app.Prepare()
 	assert.Nil(t, err)
 
+	// Add dummy
+	app.gauges["latest_block_height"].WithLabelValues("cosmos-mainnet").Set(100)
+	app.gauges["voting_power"].WithLabelValues("cosmos-mainnet").Set(100)
+
+	// Test
 	server := httptest.NewServer(router)
 	defer server.Close()
 
@@ -44,9 +55,14 @@ func Test_Prom(t *testing.T) {
 	d, err := io.ReadAll(resp.Body)
 	assert.Nil(t, err)
 
+	// Asserts
 	for _, rpc := range config.RPCFetch {
 		for _, field := range rpc.Fields {
 			assert.Contains(t, string(d), field.MetricName)
+		}
+
+		for _, label := range rpc.Labels {
+			assert.Contains(t, string(d), label.Key)
 		}
 	}
 }

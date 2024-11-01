@@ -7,6 +7,9 @@ rpc_fetch:
         metric_name: "block_height"
       - selector: ".result.sync_info.catch_up"
         metric_name: "catch_up"
+    labels:
+      - key: "hostname"
+        value: "cosmos-mainnet"
         
   - method: POST
     url: http://localhost:8545
@@ -14,3 +17,6 @@ rpc_fetch:
     fields:
       - selector: ".result"
         metric_name: "is_syncing"
+    labels:
+      - key: "hostname"
+        value: "ethereum-holesky"

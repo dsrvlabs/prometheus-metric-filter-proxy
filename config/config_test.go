@@ -34,6 +34,12 @@ func TestConfig_Load(t *testing.T) {
 								MetricName: "catch_up",
 							},
 						},
+						Labels: []types.Label{
+							{
+								Key:   "hostname",
+								Value: "cosmos-mainnet",
+							},
+						},
 					},
 					{
 						Method: "POST",
@@ -43,6 +49,12 @@ func TestConfig_Load(t *testing.T) {
 							{
 								Selector:   ".result",
 								MetricName: "is_syncing",
+							},
+						},
+						Labels: []types.Label{
+							{
+								Key:   "hostname",
+								Value: "ethereum-holesky",
 							},
 						},
 					},
@@ -65,6 +77,11 @@ func TestConfig_Load(t *testing.T) {
 				for j, field := range rpc.Fields {
 					assert.Equal(t, tt.ExpectConfig.RPCFetch[i].Fields[j].Selector, field.Selector)
 					assert.Equal(t, tt.ExpectConfig.RPCFetch[i].Fields[j].MetricName, field.MetricName)
+				}
+
+				for j, label := range rpc.Labels {
+					assert.Equal(t, tt.ExpectConfig.RPCFetch[i].Labels[j].Key, label.Key)
+					assert.Equal(t, tt.ExpectConfig.RPCFetch[i].Labels[j].Value, label.Value)
 				}
 			}
 

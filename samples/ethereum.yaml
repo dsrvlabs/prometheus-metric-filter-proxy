@@ -5,6 +5,9 @@ rpc_fetch:
     fields:
       - selector: ".result"
         metric_name: "is_syncing"
+    labels:
+      - key: "hostname"
+        value: "ethereum-holesky"
 
   - method: POST
     url: https://rpc.flashbots.net
@@ -12,3 +15,6 @@ rpc_fetch:
     fields:
       - selector: ".result"
         metric_name: "block_number"
+    labels:
+      - key: "hostname"
+        value: "ethereum-holesky"

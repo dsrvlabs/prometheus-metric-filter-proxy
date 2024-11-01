@@ -13,8 +13,8 @@ import (
 	"github.com/dsrvlabs/prometheus-proxy/config"
 	"github.com/dsrvlabs/prometheus-proxy/converter"
 	"github.com/dsrvlabs/prometheus-proxy/jsonselector"
-	"github.com/dsrvlabs/prometheus-proxy/types"
 	"github.com/dsrvlabs/prometheus-proxy/log"
+	"github.com/dsrvlabs/prometheus-proxy/types"
 )
 
 const (
@@ -26,21 +26,25 @@ const (
 type App struct {
 	config    *types.Config
 	converter converter.Converter
-	gauges    map[string]prometheus.Gauge
+	gauges    map[string]*prometheus.GaugeVec
 }
 
 // Prepare prepares prometheus metrics.
 func (a *App) Prepare() (*http.ServeMux, error) {
-	a.gauges = make(map[string]prometheus.Gauge)
+	a.gauges = make(map[string]*prometheus.GaugeVec)
 
 	rpcs := a.config.RPCFetch
 	for _, rpc := range rpcs {
 		fields := rpc.Fields
+		labels := make([]string, len(rpc.Labels))
+		for i, label := range rpc.Labels {
+			labels[i] = label.Key
+		}
+
 		for _, field := range fields {
-			gauge := prometheus.NewGauge(
-				prometheus.GaugeOpts{
-					Name: field.MetricName,
-				},
+			gauge := prometheus.NewGaugeVec(
+				prometheus.GaugeOpts{Name: field.MetricName},
+				labels,
 			)
 
 			a.gauges[field.MetricName] = gauge
@@ -84,7 +88,12 @@ func (a *App) updateMetrics() {
 				continue
 			}
 
-			gauge.Set(result.Value)
+			labels := make([]string, len(rpc.Labels))
+			for i, label := range rpc.Labels {
+				labels[i] = label.Value
+			}
+
+			gauge.WithLabelValues(labels...).Set(result.Value)
 		}
 	}
 }
