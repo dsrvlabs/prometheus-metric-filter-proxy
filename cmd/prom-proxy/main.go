@@ -54,19 +54,19 @@ func main() {
 	app := &cli.App{
 		Name:  "prom-proxy",
 		Usage: "A Prometheus proxy application",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "config",
-				Value:    "config.yaml",
-				Usage:    "config file",
-				Required: true,
-			},
-		},
 		Commands: []*cli.Command{
 			{
 				Name:    "start",
 				Aliases: []string{"s"},
 				Usage:   "start proxy server",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "config",
+						Value:    "config.yaml",
+						Usage:    "config file",
+						Required: true,
+					},
+				},
 				Action: func(cCtx *cli.Context) error {
 					// TODO: Get port number
 					// TODO: Get server address
