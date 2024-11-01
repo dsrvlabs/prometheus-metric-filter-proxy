@@ -11,6 +11,7 @@ import (
 	"github.com/dsrvlabs/prometheus-proxy/types"
 )
 
+// ResultConvert represents the result of a conversion.
 type ResultConvert struct {
 	Selector   string
 	MetricName string
@@ -74,6 +75,7 @@ func (c *converter) Fetch(config types.RPCFetchConfig) ([]ResultConvert, error) 
 	return ret, nil
 }
 
+// NewConverter creates a new Converter.
 func NewConverter(selector jsonselector.Selector) Converter {
 	return &converter{
 		selector: selector,
